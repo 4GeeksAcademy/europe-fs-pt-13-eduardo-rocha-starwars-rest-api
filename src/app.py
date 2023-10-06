@@ -1,15 +1,17 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
-import os
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
-#from models import Person
+from models import db, Characters
+from models import db, Planets
+from models import db, Vehicles
+from models import db, Favorites
+
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -36,14 +38,40 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
+@app.route('/people', methods=['GET'])
+def get_characters():
+    json_text = jsonify(Characters)
+    return json_text
 
-    response_body = {
-        "msg": "Hello, this is your GET /user response "
-    }
+@app.route('/planets', methods=['GET'])
+def get_planets():
+    json_text = jsonify(Planets)
+    return json_text
 
-    return jsonify(response_body), 200
+@app.route('/vehicles', methods=['GET'])
+def get_vehicles():
+    json_text = jsonify(Vehicles)
+    return json_text
+
+@app.route('/favorites', methods=['GET'])
+def get_favorites():
+    json_text = jsonify(Favorites)
+    return json_text
+
+@app.route('/favorites', methods=['POST'])
+def add_new_favorites():
+    request_body = request.get_json(force=True)
+    Favorites.append(request_body)
+    json_text = jsonify(Favorites)
+    print("Incoming request with the following body", request_body)
+    return json_text
+
+@app.route('/favorites/<int:position>', methods=['DELETE'])
+def delete_favorites(id):
+    del(Favorites.id)
+    json_text = jsonify(Favorites)
+    print("This is the position to delete: ", id)
+    return json_text
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
