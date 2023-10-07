@@ -43,8 +43,18 @@ def get_characters():
     json_text = jsonify(Characters)
     return json_text
 
+@app.route('/people/<int:people_id>', methods=['GET'])
+def get_character_by_id():
+    json_text = jsonify(Characters)
+    return json_text
+
 @app.route('/planets', methods=['GET'])
 def get_planets():
+    json_text = jsonify(Planets)
+    return json_text
+
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def get_planet_by_id():
     json_text = jsonify(Planets)
     return json_text
 
@@ -53,12 +63,46 @@ def get_vehicles():
     json_text = jsonify(Vehicles)
     return json_text
 
-@app.route('/favorites', methods=['GET'])
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_vehicle_by_id():
+    json_text = jsonify(Vehicles)
+    return json_text
+
+@app.route('/users', methods=['GET'])
 def get_favorites():
     json_text = jsonify(Favorites)
     return json_text
 
-@app.route('/favorites', methods=['POST'])
+@app.route('/users/favorites', methods=['GET'])
+def get_favorites():
+    json_text = jsonify(Favorites)
+    return json_text
+
+@app.route('/favorite/people/<int:people_id>', methods=['POST'])
+def add_new_favorites(character_id):
+    request_body = request.get_json(force=True)
+    Favorites[character_id].append(request_body)
+    json_text = jsonify(Favorites)
+    print("Incoming request with the following body", request_body)
+    return json_text
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_new_favorites(planet_id):
+    request_body = request.get_json(force=True)
+    Favorites[planet_id].append(request_body)
+    json_text = jsonify(Favorites)
+    print("Incoming request with the following body", request_body)
+    return json_text
+
+@app.route('/favorite/vehicle/<int:vehicle_id>', methods=['POST'])
+def add_new_favorites(vehicle_id):
+    request_body = request.get_json(force=True)
+    Favorites[vehicle_id].append(request_body)
+    json_text = jsonify(Favorites)
+    print("Incoming request with the following body", request_body)
+    return json_text
+
+@app.route('/users/favorites', methods=['POST'])
 def add_new_favorites():
     request_body = request.get_json(force=True)
     Favorites.append(request_body)
@@ -66,9 +110,23 @@ def add_new_favorites():
     print("Incoming request with the following body", request_body)
     return json_text
 
-@app.route('/favorites/<int:position>', methods=['DELETE'])
-def delete_favorites(id):
-    del(Favorites.id)
+@app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
+def delete_favorites(character_id):
+    del(Favorites[character_id])
+    json_text = jsonify(Favorites)
+    print("This is the position to delete: ", id)
+    return json_text
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_favorites(planet_id):
+    del(Favorites[planet_id])
+    json_text = jsonify(Favorites)
+    print("This is the position to delete: ", id)
+    return json_text
+
+@app.route('/favorite/vehicle/<int:vehicle>', methods=['DELETE'])
+def delete_favorites(vehicle_id):
+    del(Favorites[vehicle_id])
     json_text = jsonify(Favorites)
     print("This is the position to delete: ", id)
     return json_text
