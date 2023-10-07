@@ -1,6 +1,7 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
+import os
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
@@ -69,7 +70,7 @@ def get_vehicle_by_id():
     return json_text
 
 @app.route('/users', methods=['GET'])
-def get_favorites():
+def get_users():
     json_text = jsonify(Favorites)
     return json_text
 
@@ -79,7 +80,7 @@ def get_favorites():
     return json_text
 
 @app.route('/favorite/people/<int:people_id>', methods=['POST'])
-def add_new_favorites(character_id):
+def add_new_favorite_character(character_id):
     request_body = request.get_json(force=True)
     Favorites[character_id].append(request_body)
     json_text = jsonify(Favorites)
@@ -87,7 +88,7 @@ def add_new_favorites(character_id):
     return json_text
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def add_new_favorites(planet_id):
+def add_new_favorite_planet(planet_id):
     request_body = request.get_json(force=True)
     Favorites[planet_id].append(request_body)
     json_text = jsonify(Favorites)
@@ -95,7 +96,7 @@ def add_new_favorites(planet_id):
     return json_text
 
 @app.route('/favorite/vehicle/<int:vehicle_id>', methods=['POST'])
-def add_new_favorites(vehicle_id):
+def add_new_favorite_vehicle(vehicle_id):
     request_body = request.get_json(force=True)
     Favorites[vehicle_id].append(request_body)
     json_text = jsonify(Favorites)
@@ -111,21 +112,21 @@ def add_new_favorites():
     return json_text
 
 @app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
-def delete_favorites(character_id):
+def delete_favorite_character(character_id):
     del(Favorites[character_id])
     json_text = jsonify(Favorites)
     print("This is the position to delete: ", id)
     return json_text
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
-def delete_favorites(planet_id):
+def delete_favorite_planet(planet_id):
     del(Favorites[planet_id])
     json_text = jsonify(Favorites)
     print("This is the position to delete: ", id)
     return json_text
 
 @app.route('/favorite/vehicle/<int:vehicle>', methods=['DELETE'])
-def delete_favorites(vehicle_id):
+def delete_favorite_vehicle(vehicle_id):
     del(Favorites[vehicle_id])
     json_text = jsonify(Favorites)
     print("This is the position to delete: ", id)
