@@ -8,10 +8,14 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
+from models import db, User
 from models import db, Characters
 from models import db, Planets
 from models import db, Vehicles
-from models import db, Favorites
+from models import db, UserFavorites
+from models import db, FavoriteCharacter
+from models import db, FavoritePlanet
+from models import db, FavoriteVehicle
 
 
 app = Flask(__name__)
@@ -39,6 +43,12 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+@app.route('/user', methods=['GET'])
+def get_user():
+    json_text = jsonify(User)
+    return json_text
+
+
 @app.route('/people', methods=['GET'])
 def get_characters():
     json_text = jsonify(Characters)
@@ -51,8 +61,12 @@ def get_character_by_id():
 
 @app.route('/planets', methods=['GET'])
 def get_planets():
-    json_text = jsonify(Planets)
-    return json_text
+    planets = Planets.query.all()
+    user = User.query.get(user.id)
+
+    user.favorite_planets
+    planets_serialized = [p.serialized() for p in planets]
+    return jsonify(planets_serialized), 200
 
 @app.route('/planets/<int:planet_id>', methods=['GET'])
 def get_planet_by_id():
@@ -71,64 +85,64 @@ def get_vehicle_by_id():
 
 @app.route('/users', methods=['GET'])
 def get_users():
-    json_text = jsonify(Favorites)
+    json_text = jsonify(User)
     return json_text
 
 @app.route('/users/favorites', methods=['GET'])
 def get_favorites():
-    json_text = jsonify(Favorites)
+    json_text = jsonify(UserFavorites)
     return json_text
 
 @app.route('/favorite/people/<int:people_id>', methods=['POST'])
 def add_new_favorite_character(character_id):
     request_body = request.get_json(force=True)
-    Favorites[character_id].append(request_body)
-    json_text = jsonify(Favorites)
+    FavoriteCharacter(character_id).append(request_body)
+    json_text = jsonify(FavoriteCharacter)
     print("Incoming request with the following body", request_body)
     return json_text
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
 def add_new_favorite_planet(planet_id):
     request_body = request.get_json(force=True)
-    Favorites[planet_id].append(request_body)
-    json_text = jsonify(Favorites)
+    FavoritePlanet(planet_id).append(request_body)
+    json_text = jsonify(FavoritePlanet)
     print("Incoming request with the following body", request_body)
     return json_text
 
 @app.route('/favorite/vehicle/<int:vehicle_id>', methods=['POST'])
 def add_new_favorite_vehicle(vehicle_id):
     request_body = request.get_json(force=True)
-    Favorites[vehicle_id].append(request_body)
-    json_text = jsonify(Favorites)
+    FavoriteVehicle(vehicle_id).append(request_body)
+    json_text = jsonify(FavoriteVehicle)
     print("Incoming request with the following body", request_body)
     return json_text
 
 @app.route('/users/favorites', methods=['POST'])
 def add_new_favorites():
     request_body = request.get_json(force=True)
-    Favorites.append(request_body)
-    json_text = jsonify(Favorites)
+    UserFavorites.append(request_body)
+    json_text = jsonify(UserFavorites)
     print("Incoming request with the following body", request_body)
     return json_text
 
 @app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
 def delete_favorite_character(character_id):
-    del(Favorites[character_id])
-    json_text = jsonify(Favorites)
+    del(FavoriteCharacter(character_id))
+    json_text = jsonify(FavoriteCharacter)
     print("This is the position to delete: ", id)
     return json_text
 
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
 def delete_favorite_planet(planet_id):
-    del(Favorites[planet_id])
-    json_text = jsonify(Favorites)
+    del(FavoritePlanet(planet_id))
+    json_text = jsonify(FavoritePlanet)
     print("This is the position to delete: ", id)
     return json_text
 
 @app.route('/favorite/vehicle/<int:vehicle>', methods=['DELETE'])
 def delete_favorite_vehicle(vehicle_id):
-    del(Favorites[vehicle_id])
-    json_text = jsonify(Favorites)
+    del(FavoriteVehicle[vehicle_id])
+    json_text = jsonify(FavoriteVehicle)
     print("This is the position to delete: ", id)
     return json_text
 
