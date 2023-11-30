@@ -2,18 +2,13 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
-from models import db, Character
-from models import db, Planet
-from models import db, Vehicle
-from models import db, UserFavorites
+from models import db, User, People, Planets, Vehicles, UserFavorites
 
 
 app = Flask(__name__)
@@ -42,395 +37,312 @@ def sitemap():
     return generate_sitemap(app)
 
 # USER-----------------------------------------------------------------------------------------------
-# create a User
-@app.route('/users', methods=['POST'])
-def create_user():
-    try:
-        data = request.get_json()
-        new_user = User(username=data['username'], email=data['email'])
-        db.session.add(new_user)
-        db.session.commit()
-        return make_response(jsonify({'message': 'user created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating user'}), 500)
 
-# get all users
+#Get all users
 @app.route('/users', methods=['GET'])
 def get_users():
-    try:
-        users = User.query.all()
-        return make_response(jsonify([user.json() for user in users]), 200)
-    except e:
-        return make_response(jsonify({'message': 'error getting users'}), 500)
+    #access all registered users
+    users_querys = User.query.all()
+    #map users to convert into an array and return an array of objects
+    results = list(map(lambda user: user.serialize(), users_querys))
+
+    #is users empty, returns error code
+    if results == []:
+        return jsonify({"msg": "No registered users"}), 404
     
-# get user by ID
-@app.route('/users/<int:id>', methods=['GET'])
-def get_user(id):
-  try:
-    user = User.query.filter_by(id=id).first()
-    if user:
-      return make_response(jsonify({'user': user.json()}), 200)
-    return make_response(jsonify({'message': 'user not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting user'}), 500)
+    #display results of access
+    response_body = {
+        "msg": "These are the registered users", 
+        "results": results
+    }
+    return jsonify(response_body), 200
 
-# Update user
-@app.route('/users/<int:id>', methods=['PUT'])
-def update_user(id):
-  try:
-    user = User.query.filter_by(id=id).first()
-    if user:
-      data = request.get_json()
-      user.username = data['username']
-      user.email = data['email']
-      db.session.commit()
-      return make_response(jsonify({'message': 'user updated'}), 200)
-    return make_response(jsonify({'message': 'user not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating user'}), 500)
+#DGet user by id
+@app.route('/users/<int:user_id>', methods=['GET'])
+def get_one_user(user_id):
+    #filter all users by id
+    user_query = User.query.filter_by(id = user_id).first()
 
-# DELETE a User
-@app.route('/users/<int:id>', methods=['DELETE'])
-def delete_user(id):
-  try:
-    user = User.query.filter_by(id=id).first()
-    if user:
-      db.session.delete(user)
-      db.session.commit()
-      return make_response(jsonify({'message': 'user deleted'}), 200)
-    return make_response(jsonify({'message': 'user not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error deleting user'}), 500)
+    if user_query is None:
+        return jsonify({"msg": "User with id: " + str(user_id) + " doesn't exist"}), 404
+    
+    response_body = {
+        "msg": "User is", 
+        "result": user_query.serialize()
+    }
 
-# CHARACTERS-----------------------------------------------------------------------------------------------
-# create a character
-@app.route('/people', methods=['POST'])
-def create_character():
-    try:
-        data = request.get_json()
-        new_character = Character(charactername=data['charactername'], uid=data['character.id'], url=data['character.url'])
-        db.session.add(new_character)
-        db.session.commit()
-        return make_response(jsonify({'message': 'character created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating character'}), 500)
+    return jsonify(response_body), 200
 
-# get all characters
+#Returns ALL People
 @app.route('/people', methods=['GET'])
-def get_characters():
-    try:
-        characters = Character.query.all()
-        return make_response(jsonify([character.json() for character in characters]), 200)
-    except e:
-        return make_response(jsonify({'message': 'error getting users'}), 500)
+def get_people():
+    people_querys = People.query.all()
+    results = list(map(lambda people: people.serialize(), people_querys))
     
-# get character by ID
-@app.route('/people/<int:id>', methods=['GET'])
-def get_character(id):
-  try:
-    character = Character.query.filter_by(id=id).first()
-    if character:
-      return make_response(jsonify({'character': character.json()}), 200)
-    return make_response(jsonify({'message': 'character not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting character'}), 500)
+    if results == []:
+        return jsonify({"msg": "No hay personajes registrados"}), 404
+    
+    response_body = {
+        "msg": "Hola, estos son los personajes", 
+        "results": results
+    }
 
-# Update a character
-@app.route('/users/<int:id>', methods=['PUT'])
-def update_character(id):
-  try:
-    character = Character.query.filter_by(id=id).first()
-    if character:
-      data = request.get_json()
-      character.charactername = data['charactername']
-      character.uid = data['uid']
-      character.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'user updated'}), 200)
-    return make_response(jsonify({'message': 'user not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating user'}), 500)
+    return jsonify(response_body), 200
 
-# DELETE a character
-@app.route('/users/<int:id>', methods=['DELETE'])
-def delete_character(id):
-  try:
-    character = User.query.filter_by(id=id).first()
-    if character:
-      db.session.delete(character)
-      db.session.commit()
-      return make_response(jsonify({'message': 'user deleted'}), 200)
-    return make_response(jsonify({'message': 'user not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error deleting user'}), 500)
+#Return Person by id
+@app.route('/people/<int:people_id>', methods=['GET'])
+def get_one_person(people_id):
+    person_query = People.query.filter_by(id = people_id).first()
 
+    if person_query is None:
+        return jsonify({"msg": "Person with id: " + str(people_id) + " doesn't exist"}), 404
+    
+    response_body = {
+        "msg": "Person is:", 
+        "result": person_query.serialize()
+    }
 
-# PLANETS-----------------------------------------------------------------------------------------------
-# create a planet
-@app.route('/planets', methods=['POST'])
-def create_planet():
-    try:
-        data = request.get_json()
-        new_planet = Planet(charactername=data['planetname'], uid=data['planet.id'], url=data['planet.url'])
-        db.session.add(new_planet)
-        db.session.commit()
-        return make_response(jsonify({'message': 'character created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating character'}), 500)
+    return jsonify(response_body), 200
 
-# get all planets
+#Return ALL Planets
 @app.route('/planets', methods=['GET'])
 def get_planets():
-    try:
-        planets = Planet.query.all()
-        return make_response(jsonify([planet.json() for planet in planets]), 200)
-    except e:
-        return make_response(jsonify({'message': 'error getting users'}), 500)
+    planets_querys = Planets.query.all()
+    results = list(map(lambda planet: planet.serialize(), planets_querys))
+
+    if results == []:
+        return jsonify({"msg": "No Planets registered"}), 404
     
-# get a planet by id
-@app.route('/planets/<int:id>', methods=['GET'])
-def get_character(id):
-  try:
-    planet = Planet.query.filter_by(id=id).first()
-    if planet:
-      return make_response(jsonify({'planet': planet.json()}), 200)
-    return make_response(jsonify({'message': 'planet not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting planet'}), 500)
+    response_body = {
+        "msg": "These are the Planets", 
+        "results": results
+    }
 
-# update a planet
-@app.route('/planets/<int:id>', methods=['PUT'])
-def update_character(id):
-  try:
-    planet = Planet.query.filter_by(id=id).first()
-    if planet:
-      data = request.get_json()
-      planet.charactername = data['charactername']
-      planet.uid = data['uid']
-      planet.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'planet updated'}), 200)
-    return make_response(jsonify({'message': 'planet not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating planet'}), 500)
+    return jsonify(response_body), 200
 
-# delete a planet
-@app.route('/planets/<int:id>', methods=['DELETE'])
-def delete_planet(id):
-  try:
-    planet = Planet.query.filter_by(id=id).first()
-    if planet:
-      db.session.delete(planet)
-      db.session.commit()
-      return make_response(jsonify({'message': 'planet deleted'}), 200)
-    return make_response(jsonify({'message': 'planet not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error deleting planet'}), 500)
+#Return Planet by id
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def get_one_planet(planet_id):
+    planet_query = Planets.query.filter_by(id = planet_id).first()
 
+    if planet_query is None:
+        return jsonify({"msg": "Planet with id: " + str(planet_id) + " doesn't exist"}), 404
+    
+    response_body = {
+        "msg": "Planet is:", 
+        "result": planet_query.serialize()
+    }
 
-# VEHICLES-----------------------------------------------------------------------------------------------
-# create a vehicle
-@app.route('/vehicles', methods=['POST'])
-def create_vehicle():
-    try:
-        data = request.get_json()
-        new_vehicle = Vehicle(vehiclename=data['vehiclename'], uid=data['vehicle.id'], url=data['vehicle.url'])
-        db.session.add(new_vehicle)
-        db.session.commit()
-        return make_response(jsonify({'message': 'vehicle created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating vehicle'}), 500)
+    return jsonify(response_body), 200
 
-# get all vehicles
+#Returns ALL Vehicles
 @app.route('/vehicles', methods=['GET'])
 def get_vehicles():
-    try:
-        vehicles = Vehicle.query.all()
-        return make_response(jsonify([vehicle.json() for vehicle in vehicles]), 200)
-    except e:
-        return make_response(jsonify({'message': 'error getting vehicles'}), 500)
+    vehicles_querys = Vehicles.query.all()
+    results = list(map(lambda vehicle: vehicle.serialize(), vehicles_querys))
+
+    if results == []:
+        return jsonify({"msg": "No Vehicles regstered"}), 404
     
-# get vehicle by ID
-@app.route('/vehicles/<int:id>', methods=['GET'])
-def get_vehicle(id):
-  try:
-    vehicle = Vehicle.query.filter_by(id=id).first()
-    if vehicle:
-      return make_response(jsonify({'vehicle': vehicle.json()}), 200)
-    return make_response(jsonify({'message': 'vehicle not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting vehicle'}), 500)
+    response_body = {
+        "msg": "These are the Vehicles", 
+        "results": results
+    }
 
-# Update a vehicle
-@app.route('/vehicles/<int:id>', methods=['PUT'])
-def update_vehicle(id):
-  try:
-    vehicle = Vehicle.query.filter_by(id=id).first()
-    if vehicle:
-      data = request.get_json()
-      vehicle.charactername = data['charactername']
-      vehicle.uid = data['uid']
-      vehicle.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'vehicle updated'}), 200)
-    return make_response(jsonify({'message': 'vehicle not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating vehicle'}), 500)
+    return jsonify(response_body), 200
 
-# DELETE a vehicle
-@app.route('/vehicles/<int:id>', methods=['DELETE'])
-def delete_character(id):
-  try:
-    vehicle = Vehicle.query.filter_by(id=id).first()
-    if vehicle:
-      db.session.delete(vehicle)
-      db.session.commit()
-      return make_response(jsonify({'message': 'vehicle deleted'}), 200)
-    return make_response(jsonify({'message': 'vehicle not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error deleting vehicle'}), 500)
+#returns Vehicle by id
+@app.route('/vehicles/<int:vehicle_id>', methods=['GET'])
+def get_one_vehicle(vehicle_id):
+    vehicle_query = Vehicles.query.filter_by(id = vehicle_id).first()
 
-
-# FAVORITES-----------------------------------------------------------------------------------------------
-
-# create a favorite character
-@app.route('/favorites/character', methods=['POST'])
-def create_favorite_character():
-    try:
-        data = request.get_json()
-        new_favorite_character = UserFavorites(charactername=data['charactername'], uid=data['character.id'], url=data['character.url'])
-        db.session.add(new_favorite_character)
-        db.session.commit()
-        return make_response(jsonify({'message': 'favorite character created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating favorite character'}), 500)
-
-# create a favorite planet
-@app.route('/favorites/planet', methods=['POST'])
-def create_favorite_planet():
-    try:
-        data = request.get_json()
-        new_favorite_planet = UserFavorites(planetname=data['planetname'], uid=data['planet.id'], url=data['planet.url'])
-        db.session.add(new_favorite_planet)
-        db.session.commit()
-        return make_response(jsonify({'message': 'favorite planet created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating favorite planet'}), 500)
+    if vehicle_query is None:
+        return jsonify({"msg": "Vehicle with id: " + str(vehicle_id) + " doesn't exist"}), 404
     
-# create a favorite vehicle
-@app.route('/favorites/vehicle', methods=['POST'])
-def create_favorite_vehicle():
-    try:
-        data = request.get_json()
-        new_favorite_vehicle = UserFavorites(vehiclename=data['vehiclename'], uid=data['vehicle.id'], url=data['vehicle.url'])
-        db.session.add(new_favorite_vehicle)
-        db.session.commit()
-        return make_response(jsonify({'message': 'favorite vehicle created'}), 201)
-    except e:
-        return make_response(jsonify({'message': 'error creating favorite vehicle'}), 500)
+    response_body = {
+        "msg": "This is the Vehicle", 
+        "result": vehicle_query.serialize()
+    }
 
-# get all favorites
-@app.route('/favorites', methods=['GET'])
-def get_favorites():
-    try:
-        favorites = UserFavorites.query.all()
-        return make_response(jsonify([favorite.json() for favorite in favorites]), 200)
-    except e:
-        return make_response(jsonify({'message': 'error getting users'}), 500)
+    return jsonify(response_body), 200
+
+#Returns ALL User Favorites
+@app.route('/users/<int:id>/fav', methods=['GET'])
+def get_user_fav(id):
+    favs_querys = UserFavorites.query.filter_by(user_id = id)
+    results = list(map(lambda fav: fav.serialize(), favs_querys))
+    user_query = User.query.filter_by(id = id).first()
+    if user_query is None:
+        return jsonify({"msg": "User isn't registered"}), 404
+    if results == []:
+        return jsonify({"msg": "No Favoritos registered"}), 404
     
-# get favorite character by id
-@app.route('/favorites/character/<int:id>', methods=['GET'])
-def get_favorite_character(id):
-  try:
-    favorite_character = UserFavorites.query.filter_by(id=id).first()
-    if favorite_character:
-      return make_response(jsonify({'favorite character': favorite_character.json()}), 200)
-    return make_response(jsonify({'message': 'favorite character not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting favorite character'}), 500)
+    response_body = {
+        "msg": "These are the User Favorites", 
+        "results": results
+    }
 
-# get favorite planet by id
-@app.route('/favorites/planet/<int:id>', methods=['GET'])
-def get_favorite_planet(id):
-  try:
-    favorite_planet = UserFavorites.query.filter_by(id=id).first()
-    if favorite_planet:
-      return make_response(jsonify({'favorite character': favorite_planet.json()}), 200)
-    return make_response(jsonify({'message': 'favorite character not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting favorite character'}), 500)
+    return jsonify(response_body), 200
 
-# get favorite vehicle by id
-@app.route('/favorites/vehicle/<int:id>', methods=['GET'])
-def get_favorite_vehicle(id):
-  try:
-    favorite_vehicle = UserFavorites.query.filter_by(id=id).first()
-    if favorite_vehicle:
-      return make_response(jsonify({'favorite character': favorite_vehicle.json()}), 200)
-    return make_response(jsonify({'message': 'favorite character not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error getting favorite character'}), 500)
+#Add a Planet to User Favorites
+@app.route('/fav/planets/<int:planeta_id>', methods=['POST'])
+def add_planet_fav(planet_id):
+    
+    request_body = request.get_json(force=True)
 
-# Update a favorites character
-@app.route('/favorites/character/<int:id>', methods=['PUT'])
-def update_favorite_character(id):
-  try:
-    favorite = UserFavorites.query.filter_by(id=id).first()
-    if favorite:
-      data = request.get_json()
-      favorite.charactername = data['charactername']
-      favorite.uid = data['uid']
-      favorite.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'favorite character updated'}), 200)
-    return make_response(jsonify({'message': 'favorite character not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating favorite character'}), 500)
+    user_query = User.query.filter_by(id = request_body["user_id"]).first()
+    if user_query is None:
+        return jsonify({"msg": "User isn't registered"}), 404
+    
+    planet_query = Planets.query.filter_by(id = planet_id).first()
+    if planet_query is None:
+        return jsonify({"msg": "Planeta doesn't exist"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(planets_id = planet_id).first() 
+    if fav: 
+        return jsonify({"msg": "Planet is already a favorite"}), 404
+    
+    new_planet_fav = UserFavorites(user_id = request_body["user_id"], planets_id = planet_id)
+    db.session.add(new_planet_fav)
+    db.session.commit()
 
-# Update a favorites planet
-@app.route('/favorites/planet/<int:id>', methods=['PUT'])
-def update_favorite_planet(id):
-  try:
-    favorite = UserFavorites.query.filter_by(id=id).first()
-    if favorite:
-      data = request.get_json()
-      favorite.planetname = data['planetname']
-      favorite.uid = data['uid']
-      favorite.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'favorite planet updated'}), 200)
-    return make_response(jsonify({'message': 'favorite planet not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating favorite planet'}), 500)
+    request_body = {
+        "msg": "Planet added as favorite"
+    }
+    return jsonify(request_body), 200
 
-# Update a favorites vehicle
-@app.route('/favorites/vehicle/<int:id>', methods=['PUT'])
-def update_favorite(id):
-  try:
-    favorite = UserFavorites.query.filter_by(id=id).first()
-    if favorite:
-      data = request.get_json()
-      favorite.vehiclename = data['vehiclename']
-      favorite.uid = data['uid']
-      favorite.url = data['url']
-      db.session.commit()
-      return make_response(jsonify({'message': 'favorite vehicle updated'}), 200)
-    return make_response(jsonify({'message': 'favorite vehicle not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error updating favorite vehicle'}), 500)
+#Delete Planet from User Favorites
+@app.route('/fav/planets/<int:planeta_id>', methods=['DELETE'])
+def delete_planet_fav(planet_id):
+    
+    request_body = request.get_json(force=True)
 
-# DELETE a favorite
-@app.route('/favorites/<int:id>', methods=['DELETE'])
-def delete_character(id):
-  try:
-    favorite = UserFavorites.query.filter_by(id=id).first()
-    if favorite:
-      db.session.delete(favorite)
-      db.session.commit()
-      return make_response(jsonify({'message': 'favorite deleted'}), 200)
-    return make_response(jsonify({'message': 'favorite not found'}), 404)
-  except e:
-    return make_response(jsonify({'message': 'error deleting favorite'}), 500)
+    user_query = User.query.filter_by(id = request_body["user_id"]).first()
+    if user_query is None:
+        return jsonify({"msg": "User isn't registered"}), 404
+    
+    planet_query = Planets.query.filter_by(id = planet_id).first()
+    if planet_query is None:
+        return jsonify({"msg": "Planet trying to delete doesn't exist"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(planets_id = planet_id).first()
+    if fav is None:
+        return jsonify({"msg": "Planet trying to delete isn't a favorite"}), 404
+
+    db.session.delete(fav)
+    db.session.commit()
+
+    request_body = {
+        "msg": "Planet deleted from favorites"
+    }
+    return jsonify(request_body), 200
+
+#Add a Person to User Favorites
+@app.route('/fav/people/<int:person_id>', methods=['POST'])
+def add_person_fav(person_id):
+    
+    request_body = request.get_json(force=True)
+
+    user_query = User.query.filter_by(id = request_body["user_id"]).first() 
+    if user_query is None:
+        return jsonify({"msg": "User ins't registred"}), 404
+    
+    people_query = People.query.filter_by(id = person_id).first()
+    if people_query is None:
+        return jsonify({"msg": "Person doesn't exist"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(people_id = person_id).first()
+    if fav: 
+        return jsonify({"msg": "Person is already in favorites"}), 404
+    
+    new_person_fav = UserFavorites(user_id = request_body["user_id"], people_id = person_id)
+    db.session.add(new_person_fav)
+    db.session.commit()
+
+    request_body = {
+        "msg": "Person added to favorites"
+    }
+    return jsonify(request_body), 200
+
+#Delete Person from User Favorites
+@app.route('/fav/people/<int:person_id>', methods=['DELETE'])
+def delete_person_fav(person_id):
+    
+    request_body = request.get_json(force=True)
+
+    user_query = User.query.filter_by(id = request_body["user_id"]).first()
+    if user_query is None:
+        return jsonify({"msg": "User doen't exist"}), 404
+    
+    people_query = People.query.filter_by(id = person_id).first() 
+    if people_query is None:
+        return jsonify({"msg": "Person to delete doesn't existe"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(people_id = person_id).first()
+    if fav is None:
+        return jsonify({"msg": "Person to delete isn't in favorites"}), 404
+
+    db.session.delete(fav)
+    db.session.commit()
+
+    request_body = {
+        "msg": "Person deleted from favorites"
+    }
+    return jsonify(request_body), 200
+
+
+#Add a Vehicle to User Favorites
+@app.route('/fav/vehicles/<int:vehicle_id>', methods=['POST'])
+def add_vehicle_fav(vehicle_id):
+    
+    request_body = request.get_json(force=True)
+
+    user_query = User.query.filter_by(id = request_body["user_id"]).first() 
+    if user_query is None:
+        return jsonify({"msg": "User doesn't exist"}), 404
+  
+    vehicles_query = Vehicles.query.filter_by(id = vehicle_id).first()
+    if vehicles_query is None:
+        return jsonify({"msg": "Vehicle doesn't exist"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(vehicles_id = vehicle_id).first()
+    if fav: 
+        return jsonify({"msg": "Vehicle already in favories"}), 404
+    
+    new_vehicle_fav = Fav(user_id = request_body["user_id"], vehicles_id = vehicle_id)
+    db.session.add(new_vehicle_fav)
+    db.session.commit()
+
+    request_body = {
+        "msg": "Vehicle added to favorites"
+    }
+    return jsonify(request_body), 200
+
+#Delete a Vehicle from User Favorites
+@app.route('/fav/vehicles/<int:vehicle_id>', methods=['DELETE'])
+def delete_vehicle_fav(vehicle_id):
+    
+    request_body = request.get_json(force=True)
+
+    user_query = User.query.filter_by(id = request_body["user_id"]).first()
+    if user_query is None:
+        return jsonify({"msg": "User isn't registered"}), 404
+    
+    people_query = Vehicles.query.filter_by(id = vehicle_id).first() 
+    if people_query is None:
+        return jsonify({"msg": "Vehicle to delete doesn't exist"}), 404
+    
+    fav = UserFavorites.query.filter_by(user_id = request_body["user_id"]).filter_by(vehicles_id = vehicle_id).first()
+    if fav is None:
+        return jsonify({"msg": "Vehicle to delete isn't in favorites"}), 404
+
+    db.session.delete(fav)
+    db.session.commit()
+
+    request_body = {
+        "msg": "Vehcle deleted from favorites"
+    }
+    return jsonify(request_body), 200
 
 
 # this only runs if `$ python src/app.py` is executed
